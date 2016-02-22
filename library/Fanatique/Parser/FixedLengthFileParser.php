@@ -191,6 +191,18 @@ class FixedLengthFileParser implements ParserInterface
                     $this->choppingMap[$i]['length']);
             $currentLine[$name] = trim($currentLine[$name]);
 
+            if(isset($this->choppingMap[$i]['field_type'])) {
+                switch($this->choppingMap[$i]['field_type']) {
+                    case 'int':
+                        $currentLine[$name] = (int)$currentLine[$name];
+                    break;
+
+                    case 'float':
+                        $currentLine[$name] = (float)$currentLine[$name];
+                    break;
+                }
+            }
+
         }
 
         //Store callback as local variable (as PHP does not recognize closures as class members)
