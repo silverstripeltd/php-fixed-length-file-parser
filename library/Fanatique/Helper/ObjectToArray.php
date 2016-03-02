@@ -29,14 +29,13 @@ class ObjectToArray
 
     public function obj2array ( &$Instance ) {
         $clone = (array) $Instance;
-        $returnArray = array (
-            'SOURCE_KEYS' => $clone
-        );
+        $returnArray = array ();
+        $returnArray['___SOURCE_KEYS_'] = $clone;
 
         while ( list ($key, $value) = each ($clone) ) {
             $aux = explode ("\0", $key);
-            $sourceKey = $aux[count($aux)-1];
-            $returnArray[$sourceKey] = &$returnArray['SOURCE_KEYS'][$key];
+            $newkey = $aux[count($aux)-1];
+            $returnArray[$newkey] = &$returnArray['___SOURCE_KEYS_'][$key];
         }
 
         return $returnArray;
