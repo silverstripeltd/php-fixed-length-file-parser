@@ -78,22 +78,22 @@ class FixedLengthFileBuilder implements BuilderInterface
             throw new BuilderException('No map specified', 255);
         }
         // Each item we have, is going to be looped by the linebuilder to create a line.
-        foreach ($this->source as $key => $item) {
+        foreach ($this->source as $item) {
             $this->content[] = $this->buildLine($item);
         }
 
     }
 
+    /**
+     * @param array $lineSource
+     * @return string
+     * @throws BuilderException
+     */
     private function buildLine($lineSource)
     {
         $line = array();
         $totalLength = 0;
-        // If we receive an Object to build, convert it to an array
-        if (is_object($lineSource)) {
-            $converter = new ObjectToArray();
-            $convertedSource = $converter->obj2array($lineSource);
-            $lineSource = $convertedSource['array'];
-        }
+
         foreach ($this->getSourceMap() as $key => $value) {
             // Break if no length specified
             if (!array_key_exists('length', $value) || !is_int($value['length'])) {
