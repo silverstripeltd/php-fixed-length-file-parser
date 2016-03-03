@@ -34,7 +34,7 @@ class FixedLengthFileBuilder implements BuilderInterface
     /**
      * array(
      *      'SourceKey' => array(
-     *          'type' => 'string|date|source' // if source, the Key will be used to read the value from the source array
+     *          'type' => 'string|date|source|int|float' // if source, the Key will be used to read the value from the source array
      *          'length' => int // required
      *          'format' => 'DateFormat|vsprintfstring' // If type is string or date, a format is required. Date is presumed to be the current datetime
      *          'value' => 'presetstring' // not required, if set, everything else but length is ignored and the value is added to the string.
@@ -43,6 +43,10 @@ class FixedLengthFileBuilder implements BuilderInterface
      *              'b',
      *              'c',
      *          ),
+     *          'number' => array(
+     *              'decimals' => 2,
+     *              'length' => 'int' // Has to be less or equal to the source length. If signed, always 1 less than source length!
+     *          )
      *      ),
      *      'SecondKey' => array() // Et cetera.
      * )
@@ -99,13 +103,21 @@ class FixedLengthFileBuilder implements BuilderInterface
             if (!array_key_exists('length', $value) || !is_int($value['length'])) {
                 throw new BuilderException('Length not specified, exiting', 253);
             }
-
+            $number = false;
             $length = $value['length'];
             $totalLength += $length;
-
             $stringPart = $this->createStringPart($key, $value, $lineSource);
-            // Create a string of the required length.
-            $line[] = $this->createString($stringPart, $length);
+
+            if (array_key_exists('number', $value) ||
+                (array_key_exists('type', $value) &&
+                    ($value['type'] === 'int' || $value['type'] === 'float'))
+            ) {
+                $number = array_key_exists('number', $value) ? $value['number'] : array();
+                $line[] = $this->createNumber($stringPart, $length, $number);
+            } else {
+                // Create a string of the required length.
+                $line[] = $this->createString($stringPart, $length);
+            }
         }
         if (!$this->checkLength($totalLength)) {
             throw new BuilderException('Error building fixed length file', 255);
@@ -143,6 +155,7 @@ class FixedLengthFileBuilder implements BuilderInterface
      * @param string $value unpadded string
      * @param int $length Length of the part of the string.
      * @return string
+     * @internal param null $number
      */
     private function createString($value, $length)
     {
@@ -151,6 +164,45 @@ class FixedLengthFileBuilder implements BuilderInterface
         return $line;
     }
 
+    /**
+     * To avoid complexity for the developer, we are going to support number formatting.
+     * If a number is defined, we can format it to a specific length. With prefixed spaces and zeroes.
+     * This complexity is the result of numbers, signed or unsigned and prefixing zeroes might be required.
+     * @param int|float $value The unpadded value to format
+     * @param int $length total length of the number
+     * @param array|bool $format the formatting of the number
+     * @return string
+     * @throws BuilderException
+     */
+    private function createNumber($value, $length, $format)
+    {
+        $zeroLength = $length;
+        $prefix = "";
+        // If we have formatting, apply it.
+        if (is_array($format)) {
+            $number = $value;
+            // At this point, always assume US style numbers
+            $value = number_format(abs($number), $format['decimals']);
+            // Diff and make sure we continue using a negative number on padding.
+            if (array_key_exists('length', $format) && $format['length'] < $length) {
+                $zeroLength = $format['length'];
+                $prefix = $number < 0 ? "-" : " ";
+            }
+            elseif($format['length'] > $length) {
+                throw new BuilderException("Error parsing number " . $value);
+            }
+        }
+        $line = sprintf('%0' . $zeroLength . 's', $value);
+        $line = str_pad($prefix . $line, $length, " ", STR_PAD_LEFT);
+        return $line;
+    }
+
+    /**
+     * Check if the length of the string is correct. If the length is set to 0, the first line
+     * is going to set the base for how long each line should be.
+     * @param int $length
+     * @return bool
+     */
     private function checkLength($length)
     {
         if ($this->totalLength === 0) {
@@ -225,7 +277,8 @@ class FixedLengthFileBuilder implements BuilderInterface
         $this->content = $content;
     }
 
-    public function getUncombinedContent() {
+    public function getUncombinedContent()
+    {
         return $this->content;
     }
 
