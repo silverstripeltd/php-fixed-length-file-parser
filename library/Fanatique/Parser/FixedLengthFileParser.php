@@ -137,7 +137,7 @@ class FixedLengthFileParser implements ParserInterface
         }
 
         //Check for chopping map
-        if (!isset($this->choppingMap)) {
+        if (empty($this->choppingMap)) {
             throw new ParserException('A Chopping Map MUST be specified!');
         }
 
