@@ -76,7 +76,7 @@ class FixedLengthFileParser implements ParserInterface
      */
     public function setFilePath($pathToFile)
     {
-        $this->file = (string) $pathToFile;
+        $this->file = (string)$pathToFile;
     }
 
     /**
@@ -183,28 +183,28 @@ class FixedLengthFileParser implements ParserInterface
             $start = isset($this->choppingMap[$i]['start']) ? $this->choppingMap[$i]['start'] : $lastPosition;
 
             // last entry of map, reset position
-            $lastPosition = $i === $mapEntryCount-1 ? 0 : $lastPosition = $start + $this->choppingMap[$i]['length'];
+            $lastPosition = $i === $mapEntryCount - 1 ? 0 : $lastPosition = $start + $this->choppingMap[$i]['length'];
 
             $name = $this->choppingMap[$i]['field_name'];
-            $currentLine[$name] = substr($buffer,
-                    $start,
-                    $this->choppingMap[$i]['length']);
+            $currentLine[$name] = mb_substr($buffer,
+                $start,
+                $this->choppingMap[$i]['length']);
             $currentLine[$name] = trim($currentLine[$name]);
 
-            if(isset($this->choppingMap[$i]['field_type'])) {
-                switch($this->choppingMap[$i]['field_type']) {
+            if (isset($this->choppingMap[$i]['field_type'])) {
+                switch ($this->choppingMap[$i]['field_type']) {
                     case 'int':
                         $currentLine[$name] = (int)$currentLine[$name];
-                    break;
+                        break;
 
                     case 'float':
                         $currentLine[$name] = (float)$currentLine[$name];
-                    break;
+                        break;
 
                     case 'string':
                     default:
                         // no-op (by default each value is processed as a string)
-                    break;
+                        break;
                 }
             }
 
